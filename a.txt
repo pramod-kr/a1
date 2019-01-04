@@ -1,0 +1,36 @@
+p2
+#yarn jar /usr/hdp/current/hadoop-mapreduce-clients /hadoop- mapreduce-example.jar Wordcount /abc/a.txt abc/output.txt
+p3
+scp /home/batcha1/pighive.csv root@192.168.56.101:/pighive.txt
+hdfs dfs -put pighive.txt /pighive.txt
+grunt> movie = LOAD '/pighive.txt' USING PigStorge(',') as (movieid:int, title:chararray,userid:int,ratings:float, generid:int, recommended:chararray, activitystate:chararray);
+query1 = FOREACH movie GENERATE(title,ratings);
+query2= FILTER movie by movieid==1;
+query3 = FILTER movie by rating is not null;
+query4= group movie by (userid,ratings);
+query41= filter movie by ratings is not null;
+query42= foreach query41 generates $0;
+query5= group movie by all;
+query51= foreach query5 generate MAX(movie.ratings),MIN(movie.ratings), AVG(movie.ratings);
+p4
+movie = LOAD '/pighive.txt' USING PigStorge(',') as (movieid:int, title:chararray,userid:int,ratings:float, generid:int, recommended:chararray, activitystate:chararray);
+query1= group movie by movieid;
+query12= foreach query1 generate TOBAG(movie.movieid,
+movie.title, movie.user_id);
+query2= group movie all;
+res= foreach query2 genertes SUM(movie.ratings);
+query3= filter movie by movieid=100;
+query31= group query3 all;
+queryq32= foreach query31 generate SUM(query3.ratings);
+store query32 into '/output.txt' using PigStorage(',');
+# pig -f pig3.pig
+# hdfs dfs -cat /output.txt/*;
+p5
+hive> create table movie(movieid int, title string, userid int, ratings float, generic int, recommended string, activitystate string) row format delimited fields terminated by ',' ;
+hive> desc movie;
+hive> load data inpath '/pig_hive.txt' into table movie;
+hive> select * from movie;
+hive> select movieid, userid, case when generid>0 then generid else -1 end generid, case recommended when 'Y' then 1 else 0, activitystate from movie where activitystate in(2,4,5) limit 25;
+hive> select userid,movieid,title from movie where activitystate==2;
+hive> create table table2(movieid int, userid int generic int, recommended string, activitystate string) row format delimited fields terminated by ',' ;
+hive> insert overwrite table table2 select * from(select movieid, userid, case when generid>0 then generid else -1 end generid, case recommended when 'Y' then 1 else 0, activitystate from movie where activitystate in(2,4,5) limit 25) union_result;
